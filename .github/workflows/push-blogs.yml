@@ -1,0 +1,41 @@
+name: publish blog to vosc website
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  commit-to-another-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: checkout target
+        uses: actions/checkout@v4
+        with:
+          repository: vasaviosc/vasaviosc.github.io
+          token: ${{ secrets.VOSC_REPO_WRITE }}
+          path: vosc-target
+          ref: toy
+
+      - name: add blogs to target
+        run: |
+          mkdir -p vosc-target/posts/
+          cp blogs/*.md vosc-target/posts/
+
+      - name: commit and push
+        run: |
+          cd vosc-target
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || (
+            git commit -m "add new blog from ${{ github.repository }}"
+            git push origin toy
+          )
